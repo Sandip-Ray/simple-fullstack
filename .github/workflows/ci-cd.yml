@@ -31,6 +31,7 @@ jobs:
       - name: Build Backend Image
         run: |
           IMAGE=ghcr.io/${{ github.repository }}-backend:${TAG}
+          IMAGE=$(echo $IMAGE | tr '[:upper:]''[:lower:]')
           docker build -t $IMAGE ./backend
           docker push $IMAGE
           echo "BACKEND_IMAGE=$IMAGE" >> $GITHUB_ENV
@@ -38,6 +39,7 @@ jobs:
       - name: Build Frontend Image
         run: |
           IMAGE=ghcr.io/${{ github.repository }}-frontend:${TAG}
+          IMAGE=$(echo $IMAGE | tr '[:upper:]''[:lower:]')
           docker build -t $IMAGE ./frontend
           docker push $IMAGE
           echo "FRONTEND_IMAGE=$IMAGE" >> $GITHUB_ENV
