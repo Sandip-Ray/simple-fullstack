@@ -10,10 +10,24 @@
 
   <script>
     async function callBackend() {
-      const res = await fetch("/api/hello");
-      const data = await res.json();
-      document.getElementById("result").innerText =
-        JSON.stringify(data, null, 2);
+
+      // Default for deployed environment
+      let baseUrl = "";
+
+      // When running frontend locally (Live Server: port 5500)
+      if (window.location.port === "5500") {
+        baseUrl = "http://127.0.0.1:8000";
+      }
+
+      try {
+        const res = await fetch(`${baseUrl}/api/hello`);
+        const data = await res.json();
+
+        document.getElementById("result").innerText =
+          JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("result").innerText = "ERROR: " + e;
+      }
     }
   </script>
 </body>
