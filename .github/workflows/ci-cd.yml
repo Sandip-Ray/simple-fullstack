@@ -1,0 +1,58 @@
+name: CI-CD
+
+on:
+  push:
+    branches: ["main", "dev"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "ENV=production" >> $GITHUB_ENV
+            echo "TAG=prod-${GITHUB_SHA}" >> $GITHUB_ENV
+          else
+            echo "ENV=staging" >> $GITHUB_ENV
+            echo "TAG=dev-${GITHUB_SHA}" >> $GITHUB_ENV
+          fi
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Backend Image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}-backend:${TAG}
+          docker build -t $IMAGE ./backend
+          docker push $IMAGE
+          echo "BACKEND_IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Build Frontend Image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}-frontend:${TAG}
+          docker build -t $IMAGE ./frontend
+          docker push $IMAGE
+          echo "FRONTEND_IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Install kubectl in runner
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig in runner
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig
+          export KUBECONFIG=$PWD/kubeconfig
+
+      - name: Deploy to Kubernetes
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig
+          kubectl apply -f k8s/namespaces.yaml
+          sed "s|IMAGE_BACKEND|$BACKEND_IMAGE|" k8s/backend.yaml | kubectl apply -n $ENV -f -
+          sed "s|IMAGE_FRONTEND|$FRONTEND_IMAGE|" k8s/frontend.yaml | kubectl apply -n $ENV -f -

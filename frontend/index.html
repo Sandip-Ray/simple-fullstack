@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Full Stack</title>
+</head>
+<body>
+  <h2>Python Full Stack CI/CD</h2>
+  <button onclick="callBackend()">Call Backend</button>
+  <pre id="result"></pre>
+
+  <script>
+    async function callBackend() {
+      const res = await fetch("/api/hello");
+      const data = await res.json();
+      document.getElementById("result").innerText =
+        JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
